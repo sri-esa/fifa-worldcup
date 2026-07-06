@@ -8,6 +8,28 @@ Live demo: https://radiant-monstera-3e83fb.netlify.app
 
 Repository: https://github.com/sri-esa/fifa-worldcup
 
+## Submission Checklist
+
+| Requirement | Status |
+| --- | --- |
+| Public GitHub repository | Repository link included above. |
+| Single branch | Project is maintained on `main`. |
+| Repository size under 10 MB | Current Git object size is about 32.70 KiB. |
+| Complete project code | App, core logic, tests, deployment config, and README are included. |
+| README explains vertical, approach, logic, and assumptions | Covered in the sections below. |
+| Deployed demo | Netlify demo link included above. |
+
+## Chosen Vertical
+
+**Challenge 4: Smart Stadiums and Tournament Operations**
+
+The selected persona is a FIFA World Cup 2026 match-day operations team that must support four groups at once:
+
+- **Fans** who need quick guidance for gates, seats, transport, medical help, and accessible routes.
+- **Volunteers** who need a simple way to report field issues without learning a complex system.
+- **Venue staff** who need prioritized operational actions instead of raw reports.
+- **Organizers** who need live summaries of crowd pressure and service disruptions.
+
 ## Problem Statement Alignment
 
 Large tournament venues need to make fast decisions from noisy, fragmented signals: crowd pressure, volunteer reports, fan navigation requests, transport status, accessibility needs, and service disruptions. StadiumOps AI turns those signals into real-time guidance for fans, volunteers, and operations staff.
@@ -21,6 +43,23 @@ The solution directly targets Challenge 4: Smart Stadiums and Tournament Operati
 - Volunteer incident triage.
 - Transportation guidance after match events.
 - Sustainability-adjacent operations such as water, waste, and cleanup signals.
+
+## Approach and Logic
+
+The project is designed around a practical match-day loop:
+
+1. **Observe:** Venue zones expose current occupancy, capacity, wait time, transport status, and accessibility metadata.
+2. **Understand:** The AI logic scores risk, classifies natural-language reports, and identifies the strongest current operational signals.
+3. **Decide:** The command brief and intervention engine recommend concrete next actions for staff.
+4. **Assist:** Fans receive contextual guidance, including transport and step-free route help.
+5. **Update:** The simulation advances match-minute pressure so the interface demonstrates dynamic decision making.
+
+The logic intentionally separates UI rendering from decision logic:
+
+- `src/data/venue.mjs` contains the venue model and demo signals.
+- `src/core/stadiumOps.mjs` contains the AI-style reasoning functions.
+- `src/app.js` connects the browser UI, forms, and simulation state.
+- `tests/stadiumOps.test.mjs` validates the core behavior without depending on the browser.
 
 ## Core Experience
 
@@ -42,6 +81,15 @@ This MVP uses a deterministic local AI engine so judges can run, inspect, and te
 | `recommendInterventions` | Converts risks and reports into operational actions. | Gemini decision-support suggestions with policy guardrails. |
 
 Production safeguards would include strict JSON schemas, prompt-injection filtering, source-grounded retrieval, moderation, rate limiting, audit logs, and human approval for critical safety decisions.
+
+## Assumptions
+
+- The MVP uses simulated venue data because real FIFA World Cup 2026 operational feeds are not publicly available.
+- The venue layout is a representative demo model, not an official stadium map.
+- The local GenAI engine is deterministic for reliable judging, repeatable tests, and no API-key requirement.
+- Critical actions such as medical dispatch or gate closure would require human approval in production.
+- Multilingual output is represented as a demo boundary; production deployment would use verified translations or a grounded Gemini workflow.
+- The Netlify deployment is used for public judging access because the active Google Cloud project had billing disabled during Cloud Run deployment.
 
 ## Architecture
 
