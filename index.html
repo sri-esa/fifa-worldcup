@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="StadiumOps AI smart stadium command center for FIFA World Cup 2026 operations.">
+    <title>StadiumOps AI</title>
+    <link rel="stylesheet" href="src/styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">FIFA World Cup 2026 venue operations</p>
+        <h1>StadiumOps AI</h1>
+      </div>
+      <div class="status-strip" aria-label="Live venue status">
+        <span><strong id="match-clock">18:50</strong> local</span>
+        <span><strong id="open-incidents">3</strong> open signals</span>
+        <span><strong id="risk-count">0</strong> high-risk zones</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="command-panel" aria-labelledby="brief-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">AI command brief</p>
+            <h2 id="brief-title">Operational intelligence</h2>
+          </div>
+          <button id="simulate-button" class="icon-button" type="button" aria-label="Simulate next match minute" title="Simulate next match minute">Run</button>
+        </div>
+
+        <div class="brief" aria-live="polite">
+          <p id="brief-headline" class="brief-headline"></p>
+          <p id="brief-summary"></p>
+          <p><strong>Next best action:</strong> <span id="brief-action"></span></p>
+        </div>
+
+        <div class="metrics-grid" aria-label="Operations metrics">
+          <article>
+            <span class="metric-value" id="avg-wait">0</span>
+            <span class="metric-label">avg wait min</span>
+          </article>
+          <article>
+            <span class="metric-value" id="accessible-zones">0</span>
+            <span class="metric-label">accessible zones</span>
+          </article>
+          <article>
+            <span class="metric-value" id="transport-wait">0</span>
+            <span class="metric-label">fastest transit min</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="map-panel" aria-labelledby="map-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Venue pressure map</p>
+            <h2 id="map-title">MetLife Stadium demo venue</h2>
+          </div>
+          <div class="legend" aria-label="Risk legend">
+            <span><i class="normal"></i>Normal</span>
+            <span><i class="moderate"></i>Moderate</span>
+            <span><i class="high"></i>High</span>
+            <span><i class="critical"></i>Critical</span>
+          </div>
+        </div>
+
+        <div id="stadium-map" class="stadium-map" role="list" aria-label="Interactive venue zones"></div>
+      </section>
+
+      <section class="assistant-panel" aria-labelledby="fan-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Fan experience</p>
+            <h2 id="fan-title">Multilingual assistant</h2>
+          </div>
+          <label class="select-label">
+            <span>Language</span>
+            <select id="language-select"></select>
+          </label>
+        </div>
+
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <form id="fan-form" class="prompt-form">
+          <label for="fan-question">Fan question</label>
+          <div>
+            <input id="fan-question" name="question" type="text" autocomplete="off" value="I need an accessible route from Metro Plaza to my seat">
+            <button type="submit">Ask AI</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="volunteer-panel" aria-labelledby="volunteer-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Volunteer copilot</p>
+            <h2 id="volunteer-title">Report triage</h2>
+          </div>
+        </div>
+
+        <form id="report-form" class="report-form">
+          <label for="report-text">New field report</label>
+          <textarea id="report-text" name="report" rows="4">Crowd is blocking the East Concourse near Concession 12</textarea>
+          <button type="submit">Classify and route</button>
+        </form>
+
+        <div id="incident-feed" class="incident-feed" aria-live="polite"></div>
+      </section>
+
+      <section class="interventions-panel" aria-labelledby="actions-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Decision support</p>
+            <h2 id="actions-title">Recommended interventions</h2>
+          </div>
+        </div>
+        <div id="interventions" class="interventions"></div>
+      </section>
+    </main>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
