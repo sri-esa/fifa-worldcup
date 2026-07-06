@@ -32,13 +32,6 @@ const CATEGORY_RULES = [
 ];
 
 const DEFAULT_ACTION = "Send a nearby volunteer to verify the report and update operations with status.";
-const HIGH_RISK_LEVELS = new Set(["Critical", "High"]);
-const URGENCY_WEIGHT = {
-  Critical: 4,
-  High: 3,
-  Medium: 2,
-  Low: 1
-};
 
 export function scoreZoneRisk(zone) {
   const load = zone.occupancy / zone.capacity;
@@ -60,34 +53,11 @@ export function scoreZoneRisk(zone) {
   return { score, level: "Normal" };
 }
 
-export function buildOperationalSnapshot(zones) {
-  const riskZones = zones
-    .map((zone) => ({ ...zone, risk: scoreZoneRisk(zone) }))
-    .sort((a, b) => b.risk.score - a.risk.score);
-
-  const fastestTransport = zones
-    .filter((zone) => zone.type === "transport")
-    .reduce((best, zone) => (best == null || zone.waitMinutes < best.waitMinutes ? zone : best), null);
-
-  return {
-    riskZones,
-    busiestZone: riskZones[0],
-    highRiskZones: riskZones.filter((zone) => HIGH_RISK_LEVELS.has(zone.risk.level)),
-    averageWait: Math.round(zones.reduce((sum, zone) => sum + zone.waitMinutes, 0) / zones.length),
-    accessibleZones: zones.filter((zone) => zone.accessible).length,
-    fastestTransport
-  };
-}
-
 export function classifyIncident(text) {
-  const normalized = normalizeText(text);
-  const matchedRule = CATEGORY_RULES
-    .map((rule) => ({
-      ...rule,
-      matches: rule.terms.filter((term) => normalized.includes(term)).length
-    }))
-    .filter((rule) => rule.matches > 0)
-    .sort((a, b) => b.matches - a.matches || URGENCY_WEIGHT[b.urgency] - URGENCY_WEIGHT[a.urgency])[0];
+  const normalized = text.toLowerCase();
+  const matchedRule = CATEGORY_RULES.find((rule) =>
+    rule.terms.some((term) => normalized.includes(term))
+  );
 
   const rule = matchedRule || {
     category: "Operations",
@@ -110,26 +80,19 @@ export function summarizeReport(text, category = "Operations") {
 }
 
 export function recommendInterventions(zones, reports) {
-  const snapshot = buildOperationalSnapshot(zones);
+  const riskZones = zones
+    .map((zone) => ({ ...zone, risk: scoreZoneRisk(zone) }))
+    .sort((a, b) => b.risk.score - a.risk.score);
+
   const reportSignals = reports.map((report) => ({
     ...report,
     ai: classifyIncident(report.text)
-  })).sort((a, b) => URGENCY_WEIGHT[b.ai.urgency] - URGENCY_WEIGHT[a.ai.urgency]);
+  }));
 
   const interventions = [];
-  const topZone = snapshot.busiestZone;
+  const topZone = riskZones[0];
 
-  const criticalReport = reportSignals.find((report) => report.ai.urgency === "Critical");
-  if (criticalReport) {
-    interventions.push({
-      title: `Immediate ${criticalReport.ai.category.toLowerCase()} response`,
-      priority: "Critical",
-      detail: criticalReport.ai.summary,
-      action: criticalReport.ai.suggestedAction
-    });
-  }
-
-  if (HIGH_RISK_LEVELS.has(topZone.risk.level)) {
+  if (topZone.risk.level === "Critical" || topZone.risk.level === "High") {
     interventions.push({
       title: `Reduce pressure at ${topZone.label}`,
       priority: topZone.risk.level,
@@ -150,17 +113,7 @@ export function recommendInterventions(zones, reports) {
     });
   }
 
-  const sustainabilityReport = reportSignals.find((report) => report.ai.category === "Sustainability");
-  if (sustainabilityReport) {
-    interventions.push({
-      title: "Protect service flow and sustainability goals",
-      priority: sustainabilityReport.ai.urgency,
-      detail: sustainabilityReport.ai.summary,
-      action: sustainabilityReport.ai.suggestedAction
-    });
-  }
-
-  const transportZone = snapshot.riskZones.find((zone) => zone.type === "transport" && zone.risk.score >= 65);
+  const transportZone = riskZones.find((zone) => zone.type === "transport" && zone.risk.score >= 65);
   if (transportZone) {
     interventions.push({
       title: `Rebalance transport load at ${transportZone.label}`,
@@ -174,20 +127,22 @@ export function recommendInterventions(zones, reports) {
 }
 
 export function buildOperationsBrief(zones, reports) {
-  const snapshot = buildOperationalSnapshot(zones);
+  const riskZones = zones.map((zone) => ({ ...zone, risk: scoreZoneRisk(zone) }));
+  const criticalZones = riskZones.filter((zone) => ["Critical", "High"].includes(zone.risk.level));
   const incidentMix = reports.reduce((mix, report) => {
     const category = classifyIncident(report.text).category;
     mix[category] = (mix[category] || 0) + 1;
     return mix;
   }, {});
 
+  const busiest = [...riskZones].sort((a, b) => b.risk.score - a.risk.score)[0];
   const categories = Object.entries(incidentMix)
     .map(([category, count]) => `${count} ${category.toLowerCase()}`)
     .join(", ");
 
   return {
-    headline: `${snapshot.highRiskZones.length} high-attention zone${snapshot.highRiskZones.length === 1 ? "" : "s"} detected`,
-    summary: `${snapshot.busiestZone.label} has the highest operating pressure at ${snapshot.busiestZone.risk.score}/100. Current reports include ${categories || "no unresolved signals"}.`,
+    headline: `${criticalZones.length} high-attention zone${criticalZones.length === 1 ? "" : "s"} detected`,
+    summary: `${busiest.label} has the highest operating pressure at ${busiest.risk.score}/100. Current reports include ${categories || "no unresolved signals"}.`,
     nextBestAction: recommendInterventions(zones, reports)[0]?.action || DEFAULT_ACTION
   };
 }
@@ -226,7 +181,7 @@ export function findBestRoute(zones, fromText, toText, needsAccessible = false) 
 }
 
 export function answerFanQuestion(question, zones, language = "en") {
-  const normalized = normalizeText(question);
+  const normalized = question.toLowerCase();
   const needsAccessible = /wheelchair|accessible|step-free|elevator|mobility/.test(normalized);
   const wantsTransport = /metro|bus|tram|transport|parking|ride/.test(normalized);
   const wantsMedical = /medical|first aid|injury|sick|emergency/.test(normalized);
@@ -240,7 +195,9 @@ export function answerFanQuestion(question, zones, language = "en") {
   }
 
   if (wantsTransport) {
-    const bestTransport = buildOperationalSnapshot(zones).fastestTransport;
+    const bestTransport = zones
+      .filter((zone) => zone.type === "transport")
+      .sort((a, b) => a.waitMinutes - b.waitMinutes)[0];
     return localize(
       `${bestTransport.label} is currently the fastest transport option with about ${bestTransport.waitMinutes} minutes of waiting.`,
       language
@@ -254,22 +211,22 @@ export function answerFanQuestion(question, zones, language = "en") {
 
 export function localize(text, language) {
   if (language === "es") {
-    return `Respuesta en espanol: ${text}`;
+    return `[ES] ${text}`;
   }
 
   if (language === "fr") {
-    return `Reponse en francais: ${text}`;
+    return `[FR] ${text}`;
   }
 
   if (language === "hi") {
-    return `Hindi response: ${text}`;
+    return `[HI] ${text}`;
   }
 
   return text;
 }
 
 function findZone(zones, text) {
-  const normalized = normalizeText(text);
+  const normalized = text.toLowerCase();
   return zones.find((zone) =>
     zone.id.toLowerCase() === normalized ||
     zone.label.toLowerCase() === normalized ||
@@ -280,10 +237,6 @@ function findZone(zones, text) {
 function extractKnownZone(text, zones) {
   const found = zones.find((zone) => text.includes(zone.label.toLowerCase()));
   return found?.label;
-}
-
-function normalizeText(text) {
-  return String(text).toLowerCase().trim().replace(/\s+/g, " ");
 }
 
 function inferDestination(text) {

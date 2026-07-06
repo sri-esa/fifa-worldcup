@@ -1,10 +1,10 @@
 import { initialReports, languages, zones as initialZones } from "./data/venue.mjs";
 import {
   answerFanQuestion,
-  buildOperationalSnapshot,
   buildOperationsBrief,
   classifyIncident,
-  recommendInterventions
+  recommendInterventions,
+  scoreZoneRisk
 } from "./core/stadiumOps.mjs";
 
 let zones = structuredClone(initialZones);
@@ -34,34 +34,41 @@ const elements = {
 };
 
 function render() {
-  const snapshot = buildOperationalSnapshot(zones);
-  renderBrief(snapshot);
-  renderMetrics(snapshot);
-  renderMap(snapshot);
+  renderBrief();
+  renderMetrics();
+  renderMap();
   renderIncidents();
   renderInterventions();
 }
 
-function renderBrief(snapshot) {
+function renderBrief() {
   const brief = buildOperationsBrief(zones, reports);
+  const highRiskCount = zones.filter((zone) => ["High", "Critical"].includes(scoreZoneRisk(zone).level)).length;
 
   elements.matchClock.textContent = formatClock(currentMinute);
   elements.openIncidents.textContent = String(reports.length);
-  elements.riskCount.textContent = String(snapshot.highRiskZones.length);
+  elements.riskCount.textContent = String(highRiskCount);
   elements.briefHeadline.textContent = brief.headline;
   elements.briefSummary.textContent = brief.summary;
   elements.briefAction.textContent = brief.nextBestAction;
 }
 
-function renderMetrics(snapshot) {
-  elements.avgWait.textContent = String(snapshot.averageWait);
-  elements.accessibleZones.textContent = String(snapshot.accessibleZones);
-  elements.transportWait.textContent = String(snapshot.fastestTransport.waitMinutes);
+function renderMetrics() {
+  const averageWait = Math.round(zones.reduce((sum, zone) => sum + zone.waitMinutes, 0) / zones.length);
+  const accessibleCount = zones.filter((zone) => zone.accessible).length;
+  const fastestTransport = zones
+    .filter((zone) => zone.type === "transport")
+    .sort((a, b) => a.waitMinutes - b.waitMinutes)[0];
+
+  elements.avgWait.textContent = String(averageWait);
+  elements.accessibleZones.textContent = String(accessibleCount);
+  elements.transportWait.textContent = String(fastestTransport.waitMinutes);
 }
 
-function renderMap(snapshot) {
+function renderMap() {
   elements.map.replaceChildren(
-    ...snapshot.riskZones.map((zone) => {
+    ...zones.map((zone) => {
+      const risk = scoreZoneRisk(zone);
       const article = document.createElement("article");
       article.className = "zone-card";
       article.setAttribute("role", "listitem");
@@ -69,7 +76,7 @@ function renderMap(snapshot) {
         <h3>${escapeHtml(zone.label)}</h3>
         <p>${zone.type} - ${Math.round((zone.occupancy / zone.capacity) * 100)}% load - ${zone.waitMinutes} min wait</p>
         <div class="zone-meta">
-          <span><i class="risk-dot ${zone.risk.level.toLowerCase()}"></i> ${zone.risk.level}</span>
+          <span><i class="risk-dot ${risk.level.toLowerCase()}"></i> ${risk.level}</span>
           <span>${zone.accessible ? "Step-free" : "Stairs"}</span>
         </div>
       `;
