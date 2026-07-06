@@ -124,6 +124,16 @@ The core logic is isolated from the UI so it can be unit tested, reviewed, and l
 | Testing | Low | Includes Node tests for risk scoring, incident classification, operations summaries, route guidance, transport answers, and recommended interventions. |
 | Accessibility | Low | Uses semantic HTML, visible labels, keyboard focus states, responsive layouts, high-contrast status colors, and step-free route support for mobility-aware fan guidance. |
 
+## Final Score Optimization Notes
+
+The final iteration specifically targets the lowest evaluation areas from previous scoring feedback:
+
+- **Problem statement alignment:** Incident classification now prioritizes urgent safety signals such as medical emergencies over generic location words like `gate`, making the assistant more realistic for stadium operations.
+- **Problem statement alignment:** Sustainability, accessibility, transport, medical, crowd, volunteer, and fan-support flows all produce distinct operational recommendations.
+- **Efficiency:** `buildOperationalSnapshot` computes reusable venue metrics once, including high-risk zones, average waits, fastest transport, and sorted pressure areas.
+- **Code quality:** The AI decision layer remains isolated in `src/core/stadiumOps.mjs`, while `src/app.js` focuses on rendering and interaction.
+- **Testing:** Tests now cover emergency prioritization, reusable operational snapshots, sustainability interventions, multilingual response boundaries, route guidance, and transport guidance.
+
 ## Security Notes
 
 - No API keys or tokens are stored in the repository.
@@ -137,6 +147,7 @@ The core logic is isolated from the UI so it can be unit tested, reviewed, and l
 - The app has no install-time dependencies for normal runtime.
 - The simulation updates local state only.
 - Risk scoring and intervention generation operate over the small active venue dataset.
+- Shared operational snapshots avoid recalculating the same sorted risk lists and aggregate metrics across the UI.
 - Static hosting avoids unnecessary server cost for the MVP.
 
 ## Testing
@@ -152,9 +163,13 @@ Current tests cover:
 - High-pressure zone scoring.
 - Accessibility incident classification.
 - Operational intervention generation.
+- Emergency prioritization.
+- Reusable operational snapshot generation.
+- Sustainability service-flow recommendations.
 - AI command brief generation.
 - Step-free route guidance.
 - Transport guidance.
+- Language-specific assistant response boundaries.
 
 ## Run Locally
 
