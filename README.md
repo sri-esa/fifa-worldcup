@@ -14,7 +14,7 @@ Repository: https://github.com/sri-esa/fifa-worldcup
 | --- | --- |
 | Public GitHub repository | Repository link included above. |
 | Single branch | Project is maintained on `main`. |
-| Repository size under 10 MB | Current Git object size is about 32.70 KiB. |
+| Repository size under 10 MB | Current repository size is well under the 10 MB limit. |
 | Complete project code | App, core logic, tests, deployment config, and README are included. |
 | README explains vertical, approach, logic, and assumptions | Covered in the sections below. |
 | Deployed demo | Netlify demo link included above. |
@@ -43,6 +43,19 @@ The solution directly targets Challenge 4: Smart Stadiums and Tournament Operati
 - Volunteer incident triage.
 - Transportation guidance after match events.
 - Sustainability-adjacent operations such as water, waste, and cleanup signals.
+
+### Challenge Coverage Matrix
+
+| Challenge need | Where it appears in the solution |
+| --- | --- |
+| Navigation | Fan assistant answers route questions and the route engine selects lower-pressure paths between venue zones. |
+| Crowd management | Zone pressure scores combine capacity load and wait time to surface high-attention areas. |
+| Accessibility | Accessible zones, step-free routing, and accessibility incident triage are first-class parts of the data model and assistant flow. |
+| Transportation | Transport nodes such as Metro Plaza, Bus Loop, and Tram Stop are modeled with wait times and fan guidance. |
+| Sustainability | Water, waste, cleanup, and spill reports are classified as sustainability/service-flow signals. |
+| Multilingual assistance | The assistant supports selectable language modes for fan-facing guidance. |
+| Operational intelligence | The command brief summarizes the busiest zone, open report mix, and next best action. |
+| Real-time decision support | Volunteers can submit new reports and the dashboard immediately updates recommendations. |
 
 ## Approach and Logic
 
@@ -138,6 +151,9 @@ The core logic is isolated from the UI so it can be unit tested, reviewed, and l
 - The simulation updates local state only.
 - Risk scoring and intervention generation operate over the small active venue dataset.
 - Static hosting avoids unnecessary server cost for the MVP.
+- Core operations use simple linear scans over venue zones and reports, which keeps runtime predictable as the demo state changes.
+- The app avoids client-server round trips during simulation, so UI updates remain fast even on constrained networks.
+- Static deployment means the public demo has no always-on backend and no idle compute cost.
 
 ## Testing
 
